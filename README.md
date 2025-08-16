@@ -92,18 +92,6 @@ assets/
 index.html
 
 ````
-
----
-
-## 🚀 How to Use
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/<your-username>/homelab-portfolio.git
-````
-
-2. Open `index.html` in your browser.
-3. Modify `assets/css/style.css` or `assets/js/script.js` for customization.
-
 ---
 
 ## 📄 License
