@@ -1,54 +1,97 @@
-// Add smooth scrolling
+// Smooth scrolling for in-page navigation with sticky-header offset
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
+        const href = this.getAttribute('href');
+        if (href === '#') return;
+        const target = document.querySelector(href);
+        if (!target) return;
         e.preventDefault();
-        document.querySelector(this.getAttribute('href')).scrollIntoView({
-            behavior: 'smooth'
-        });
+        const header = document.querySelector('.site-header');
+        const offset = header ? header.offsetHeight : 0;
+        const top = target.getBoundingClientRect().top + window.pageYOffset - offset;
+        window.scrollTo({ top, behavior: 'smooth' });
     });
 });
 
-// Add intersection observer for animations
-const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
+// Reveal-on-scroll for cards
+const observeReveal = () => {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.service-category, .infra-card, .stat').forEach(el => {
+        el.classList.add('reveal');
+        observer.observe(el);
+    });
 };
 
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
-        }
+// Highlight active nav link based on scroll position
+const observeNav = () => {
+    const links = document.querySelectorAll('.site-nav a[href^="#"]');
+    if (!links.length) return;
+
+    const sections = Array.from(links)
+        .map(link => document.querySelector(link.getAttribute('href')))
+        .filter(Boolean);
+
+    const updateActive = () => {
+        let current = links[0];
+        sections.forEach((section, i) => {
+            if (window.scrollY >= section.offsetTop - 120) {
+                current = links[i];
+            }
+        });
+        links.forEach(link => link.classList.remove('active'));
+        current.classList.add('active');
+    };
+
+    window.addEventListener('scroll', updateActive, { passive: true });
+    updateActive();
+};
+
+// Simulate service status indicators and header status pill
+const updateServiceStatus = () => {
+    document.querySelectorAll('.service-item .status-dot').forEach(dot => {
+        const online = Math.random() > 0.06;
+        dot.classList.toggle('down', !online);
     });
-}, observerOptions);
+};
 
-// Observe service categories
-document.querySelectorAll('.service-category').forEach(card => {
-    card.style.opacity = '0';
-    card.style.transform = 'translateY(30px)';
-    card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-    observer.observe(card);
-});
+const updateHeaderStatus = () => {
+    const headerStatus = document.querySelector('.header-status');
+    if (!headerStatus) return;
+    const pill = headerStatus.querySelector('.status-dot');
+    const label = headerStatus.querySelector('span:last-child');
+    let degraded = false;
 
-// Observe infrastructure cards
-document.querySelectorAll('.infra-card').forEach(card => {
-    card.style.opacity = '0';
-    card.style.transform = 'translateY(30px)';
-    card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-    observer.observe(card);
-});
-
-// Add dynamic status indicators
-function updateServiceStatus() {
-    const statuses = document.querySelectorAll('.service-status');
-    statuses.forEach(status => {
-        // Simulate random status updates
-        const isOnline = Math.random() > 0.05; // 95% uptime simulation
-        status.style.background = isOnline ? '#10b981' : '#ef4444';
+    document.querySelectorAll('.service-item .status-dot').forEach(dot => {
+        if (dot.classList.contains('down')) degraded = true;
     });
+
+    if (pill) pill.classList.toggle('down', degraded);
+    if (label) label.textContent = degraded ? 'Degraded Service Detected' : 'All Systems Operational';
+};
+
+// Bind status sync so the header reflects service state
+const syncStatus = () => {
+    updateServiceStatus();
+    updateHeaderStatus();
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
 }
 
-// Update status every 30 seconds
-setInterval(updateServiceStatus, 30000);
-updateServiceStatus(); // Initial call
+function init() {
+    observeReveal();
+    observeNav();
+    syncStatus();
+    setInterval(syncStatus, 20000);
+}
